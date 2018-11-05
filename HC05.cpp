@@ -3,26 +3,36 @@
 
 #define RX 2
 #define TX 3
+// Led pin define
+#define LED 13
 
 SoftwareSerial HC05(RX, TX);		// RX, TX
+uint32_t loopTimer;
+bool bOverTimeAlertLed = false;		// Semaphore in case the loop is taking longer to finish
+char readChar;
 
-void setup()
-{
-  pinMode(12, OUTPUT);  // this pin will pull the HC-05 pin 34 (key pin) HIGH to switch module to AT mode
-  digitalWrite(12, HIGH);
-  Serial.begin(9600);
-  Serial.println("Enter AT commands:");
-  HC05.begin(38400);  // HC-05 default speed in AT command more
+void setup(void) {
+	pinMode(LED, OUTPUT);
+	digitalWrite(LED, LOW);
+	Serial.begin(115200);
+
+	HC05.begin(9600);
+
+	loopTimer = micros() + 4000;
 }
 
-void loop()
-{
+void loop(void) {
 
-  // Keep reading from HC-05 and send to Arduino Serial Monitor
-  if (HC05.available())
-    Serial.write(HC05.read());
+	while (HC05.available()) {
+		readChar = (char)HC05.read();
+		Serial.print(readChar);
+	}
 
-  // Keep reading from Arduino Serial Monitor and send to HC-05
-  if (Serial.available())
-	  HC05.write(Serial.read());
+	if (bOverTimeAlertLed)
+		digitalWrite(LED, HIGH);
+	bOverTimeAlertLed = true;
+
+	while (loopTimer > micros())
+		bOverTimeAlertLed = false;
+	loopTimer += 4000;
 }
