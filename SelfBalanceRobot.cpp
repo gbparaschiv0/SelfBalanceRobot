@@ -37,13 +37,13 @@ int32_t gcx, gcy, gcz;
 float angleY, accVector;
 
 // PID Variables
-float pid_error_temp, pid_i_mem, pid_setpoint, pid_output, pid_last_d_error;
-uint16_t pid_converted;
+float pidErrorTemp, pidIMen, pidOutput, pidLastDError;
+uint16_t pidConverted;
 
 // PID values
-float pid_p_gain = 12;
-float pid_i_gain = 0.001;
-float pid_d_gain = 3;
+float pidPGain = 12;
+float pidIGain = 0.001;
+float pidDGain = 3;
 
 uint32_t loopTimer;		// Store the exact value of microseconds every loop needs to have
 
@@ -111,59 +111,59 @@ void loop(void) {
 	////////////////////////////////////////////////////////////////////////////
 	//  PID section
 
-	pid_error_temp = (int16_t) (angleY);
+	pidErrorTemp = (int16_t) (angleY);
 
-	pid_i_mem += pid_i_gain * pid_error_temp;
-	if (pid_i_mem > 150)
-		pid_i_mem = 150;
-	else if (pid_i_mem < -150)
-		pid_i_mem = -150;
+	pidIMen += pidIGain * pidErrorTemp;
+	if (pidIMen > 150)
+		pidIMen = 150;
+	else if (pidIMen < -150)
+		pidIMen = -150;
 
 	// Calculate the PID output value
-	pid_output = pid_p_gain * pid_error_temp + pid_i_mem
-			+ pid_d_gain * (pid_error_temp - pid_last_d_error);
-	if (pid_output > 300)
-		pid_output = 300;		// Limit the PI-controller to the maximum controller output
-	else if (pid_output < -300)
-		pid_output = -300;
+	pidOutput = pidPGain * pidErrorTemp + pidIMen
+			+ pidDGain * (pidErrorTemp - pidLastDError);
+	if (pidOutput > 300)
+		pidOutput = 300;		// Limit the PI-controller to the maximum controller output
+	else if (pidOutput < -300)
+		pidOutput = -300;
 
-	pid_last_d_error = pid_error_temp;		// Store the error for the next loop
+	pidLastDError = pidErrorTemp;		// Store the error for the next loop
 
 	if (angleY < 3 && angleY > -3)		// Create a dead-band to stop the motors when the robot is balanced
 			{
-		pid_converted = 0;
-		pid_output = 0;
-		pid_i_mem = 0;		// Need more tests if this needs to be reseted or not in Dead-band
+		pidConverted = 0;
+		pidOutput = 0;
+		pidIMen = 0;		// Need more tests if this needs to be reseted or not in Dead-band
 		analogWrite(LEFT, 0);
 		analogWrite(RIGHT, 0);
 	}
 
 	if (angleY > 25 || angleY < -25) {
-		pid_output = 0;
-		pid_converted = 0;
-		pid_i_mem = 0;
+		pidOutput = 0;
+		pidConverted = 0;
+		pidIMen = 0;
 		analogWrite(LEFT, 0);
 		analogWrite(RIGHT, 0);
 	}
 
-	if (pid_output < 0) {
+	if (pidOutput < 0) {
 		(void) LeftMotorDir(BW);
 		(void) RightMotorDir(BW);
-		pid_output *= -1;
+		pidOutput *= -1;
 	} else {
 		(void) LeftMotorDir(FW);
 		(void) RightMotorDir(FW);
 	}
 
-	if (pid_output != 0) {
-		pid_converted = map((uint16_t) (pid_output), 1, 300, 65, 255);
+	if (pidOutput != 0) {
+		pidConverted = map((uint16_t) (pidOutput), 1, 300, 65, 255);
 #if DEBUG_NO_MOTOR_SPIN != 1		
 		if (motorToggle) {
-			analogWrite(LEFT, pid_converted);
-			analogWrite(RIGHT, pid_converted);
+			analogWrite(LEFT, pidConverted);
+			analogWrite(RIGHT, pidConverted);
 		} else {
-			analogWrite(RIGHT, pid_converted);
-			analogWrite(LEFT, pid_converted);
+			analogWrite(RIGHT, pidConverted);
+			analogWrite(LEFT, pidConverted);
 		}
 		motorToggle ^= 0x01;
 #endif
@@ -172,9 +172,9 @@ void loop(void) {
 /*	Serial.print("An: ");
 	Serial.print(angleY);
 	Serial.print("\tPID_Res: ");
-	Serial.print(pid_output);
+	Serial.print(pidOutput);
 	Serial.print("\tPID: ");
-	Serial.println(pid_converted);*/
+	Serial.println(pidConverted);*/
 
 	// Visual led alert in case 250Hz loop is lager
 	if (bOverTimeAlertLed)
