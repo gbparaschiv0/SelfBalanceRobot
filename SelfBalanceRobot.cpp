@@ -56,7 +56,7 @@ void MotorInit(void);
 void LeftMotorDir(char);
 void RightMotorDir(char);
 
-void setup() {
+void setup(void) {
 	pinMode(LED, OUTPUT);
 
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
@@ -104,7 +104,7 @@ void setup() {
 	loopTimer = micros() + 4000;
 }
 
-void loop() {
+void loop(void) {
 	gy = accelgyro.getRotationY() - gcy;		// Get gyro Y data and subtract calibration value
 	angleY += ((float) gy / 65.5) / 250;		// Convert in degree
 
@@ -169,12 +169,12 @@ void loop() {
 #endif
 	}
 
-	Serial.print("An: ");
+/*	Serial.print("An: ");
 	Serial.print(angleY);
 	Serial.print("\tPID_Res: ");
 	Serial.print(pid_output);
 	Serial.print("\tPID: ");
-	Serial.println(pid_converted);
+	Serial.println(pid_converted);*/
 
 	// Visual led alert in case 250Hz loop is lager
 	if (bOverTimeAlertLed)
@@ -186,7 +186,7 @@ void loop() {
 	loopTimer += 4000;
 }
 
-void MotorInit() {
+void MotorInit(void) {
 	pinMode(LEFT, OUTPUT);
 	pinMode(RIGHT, OUTPUT);
 
