@@ -11,13 +11,10 @@
 
 SoftwareSerial HC05(RX, TX);		// RX, TX
 uint32_t loopTimer;
+void ReadPhoneOutput(short *, short *, char *);
 bool bOverTimeAlertLed = false;	// Semaphore in case the loop is taking longer to finish
 
-bool bStart;
-char value;
-char buffLen;
-unsigned short dataXY[2];		// x = 0, y = 1
-unsigned short myX;
+short myX, myY;
 
 char buttonCommand;
 
@@ -35,6 +32,35 @@ void setup(void)
 void loop(void)
 {
 
+(void) ReadPhoneOutput(&myX, &myY, &buttonCommand);
+
+
+	Serial.print(myX);
+	Serial.print("\t");
+	Serial.println(myY);
+
+	if (buttonCommand)
+	{
+		Serial.println(buttonCommand);
+		buttonCommand = 0;
+	}
+
+	if (bOverTimeAlertLed)
+		digitalWrite(LED, HIGH);
+	bOverTimeAlertLed = true;
+
+	while (loopTimer > micros())
+		bOverTimeAlertLed = false;
+	loopTimer += 4000;
+}
+
+void ReadPhoneOutput(short * outputX, short * outputY, char * outCommand)
+{
+	static bool bStart;
+	char value;
+	static char buffLen;
+	static unsigned short dataXY[2];		// x = 0, y = 1
+
 	if (HC05.available())
 	{
 
@@ -50,12 +76,12 @@ void loop(void)
 			bStart = false;
 			if (buffLen == 6)
 			{
-				myX = dataXY[0];
-
+				*outputX = (short) dataXY[0] - 200;
+				*outputY = (short) dataXY[1] - 200;
 			}
 			else if (buffLen == 1 && NR_TO_CH(dataXY[0]) > 64)
 			{
-				buttonCommand = NR_TO_CH(dataXY[0]);
+				*outCommand = NR_TO_CH(dataXY[0]);
 			}
 		}
 		// Processing data
@@ -70,18 +96,4 @@ void loop(void)
 			buffLen++;
 		}
 	}
-	//Serial.println(myX);
-	if (buttonCommand)
-	{
-		Serial.println(buttonCommand);
-		buttonCommand = 0;
-	}
-
-	if (bOverTimeAlertLed)
-		digitalWrite(LED, HIGH);
-	bOverTimeAlertLed = true;
-
-	while (loopTimer > micros())
-		bOverTimeAlertLed = false;
-	loopTimer += 4000;
 }
