@@ -156,3 +156,11 @@ build/Uno/project/HC05\.cpp\.o
 build/Uno/project/HelloWorld\.cpp\.d
 
 build/Uno/project/HelloWorld\.cpp\.o
+
+build/Uno/project/libs/HC05\.cpp\.d
+
+build/Uno/project/libs/HC05\.cpp\.o
+
+build/Uno/project/main\.cpp\.d
+
+build/Uno/project/main\.cpp\.o
