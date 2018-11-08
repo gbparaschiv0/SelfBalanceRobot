@@ -3,11 +3,6 @@
 // Debugging defines
 #define DEBUG_NO_MOTOR_SPIN 0
 
-// PID values
-float pidPGain = 12;
-float pidIGain = 0.001;
-float pidDGain = 3;
-
 void setup(void)
 {
 	pinMode(LED, OUTPUT);
@@ -18,6 +13,10 @@ void setup(void)
 	Fastwire::setup(400, true);
 #endif
 	Serial.begin(115200);
+
+	//EEPROM.get(0, myPID);
+
+	myPID = {10, 0, 0};
 
 	(void) HC05_Init();		// initialize bluetooth HC05
 	(void) MotorInit();		// initialize motors
@@ -70,21 +69,22 @@ void loop(void)
 	// Read data from phone
 	(void) ReadPhoneOutput(&xOutput, &yOutput, &buttonCommand);
 
+	(void) ProcessButton();
 
 	////////////////////////////////////////////////////////////////////////////
 	//  PID section
 
 	pidErrorTemp = (int16_t) (angleY);
 
-	pidIMen += pidIGain * pidErrorTemp;
+	pidIMen += myPID.i * pidErrorTemp;
 	if (pidIMen > 150)
 		pidIMen = 150;
 	else if (pidIMen < -150)
 		pidIMen = -150;
 
 	// Calculate the PID output value
-	pidOutput = pidPGain * pidErrorTemp + pidIMen
-			+ pidDGain * (pidErrorTemp - pidLastDError);
+	pidOutput = myPID.p * pidErrorTemp + pidIMen
+			+ myPID.d * (pidErrorTemp - pidLastDError);
 	if (pidOutput > 300)
 		pidOutput = 300;		// Limit the PI-controller to the maximum controller output
 	else if (pidOutput < -300)
@@ -140,7 +140,7 @@ void loop(void)
 #endif
 	}
 
-	/*	Serial.print("An: ");
+/*		Serial.print("An: ");
 	 Serial.print(angleY);
 	 Serial.print("\tPID_Res: ");
 	 Serial.print(pidOutput);
@@ -159,11 +159,43 @@ void loop(void)
 
 void ProcessButton(void)
 {
-	if(buttonCommand != NULL)
+	if (buttonCommand != NULL)
 	{
-		//Process button
+		switch (buttonCommand)
+		{
+		case P_ADD:
+		case P_ADD + 1:
+			myPID.p += 1;
+			break;
+
+		case P_SUB:
+		case P_SUB + 1:
+			myPID.p -= 1;
+			break;
+
+		case I_ADD:
+		case I_ADD + 1:
+			myPID.i += (float) 1 / I_DEVISION;
+			break;
+
+		case I_SUB:
+		case I_SUB + 1:
+			myPID.i -= (float) 1 / I_DEVISION;
+			break;
+
+		case D_ADD:
+		case D_ADD + 1:
+			myPID.d += 1;
+			break;
+
+		case D_SUB:
+		case D_SUB + 1:
+			myPID.d -= 1;
+			break;
+		}
 	}
 
+	//EEPROM.put(0, myPID);
 	// Reset button
 	buttonCommand = NULL;
 }

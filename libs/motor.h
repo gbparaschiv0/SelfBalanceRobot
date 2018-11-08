@@ -24,8 +24,8 @@ typedef enum
 	fw
 }wheelDir;
 
-void MotorInit(void);
-void LeftMotorDir(wheelDir);
-void RightMotorDir(wheelDir);
+extern void MotorInit(void);
+extern void LeftMotorDir(wheelDir);
+extern void RightMotorDir(wheelDir);
 
 #endif /* LIBS_MOTOR_H_ */

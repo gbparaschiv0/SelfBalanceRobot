@@ -164,3 +164,7 @@ build/Uno/project/libs/HC05\.cpp\.o
 build/Uno/project/main\.cpp\.d
 
 build/Uno/project/main\.cpp\.o
+
+build/Uno/project/libs/motor\.cpp\.d
+
+build/Uno/project/libs/motor\.cpp\.o
