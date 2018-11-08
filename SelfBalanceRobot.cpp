@@ -1,7 +1,7 @@
 #include "SelfBalanceRobot.h"
 
 // Debugging defines
-#define DEBUG_NO_MOTOR_SPIN 1
+#define DEBUG_NO_MOTOR_SPIN 0
 
 void setup(void)
 {
@@ -14,7 +14,9 @@ void setup(void)
 #endif
 	Serial.begin(115200);
 
-	EEPROM.get(0, myPID);
+	//EEPROM.get(0, myPID);
+
+	myPID = {10, 0, 0};
 
 	(void) HC05_Init();		// initialize bluetooth HC05
 	(void) MotorInit();		// initialize motors
@@ -193,7 +195,7 @@ void ProcessButton(void)
 		}
 	}
 
-	EEPROM.put(0, myPID);
+	//EEPROM.put(0, myPID);
 	// Reset button
 	buttonCommand = NULL;
 }

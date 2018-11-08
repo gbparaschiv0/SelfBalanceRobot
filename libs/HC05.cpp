@@ -14,7 +14,7 @@ static SoftwareSerial HC05(RX, TX);		// RX, TX
 
 void HC05_Init(void)
 {
-	HC05.begin(9600);
+	HC05.begin(57600);
 }
 
 void ReadPhoneOutput(short * outputX, short * outputY, char * outCommand)
