@@ -10,7 +10,7 @@
 #define NR_TO_CH(x) (x + 48)		// Convert number to ASCII
 #define CH_TO_NR(x) (x - 48)		// Convert ASCII to number
 
-SoftwareSerial HC05(RX, TX);		// RX, TX
+static SoftwareSerial HC05(RX, TX);		// RX, TX
 
 void HC05_Init(void)
 {

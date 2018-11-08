@@ -1,62 +1,15 @@
-#include <Arduino.h>
-#include "libs/I2Cdev.h"
-#include "libs/MPU6050.h"
-
-#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-#include "Wire.h"
-#endif
+#include "SelfBalanceRobot.h"
 
 // Debugging defines
 #define DEBUG_NO_MOTOR_SPIN 0
-
-// Led pin define
-#define LED 13
-
-// User friendly defines
-enum {
-	off, on
-};
-
-// H-Bridge pins defines
-#define LEFT 10
-#define RIGHT 11
-
-#define L_FW 9
-#define L_BW 8
-#define R_FW 6
-#define R_BW 7
-
-// Wheel rotation
-#define FW 1
-#define BW 0
-
-// MPU6050 Variables
-int16_t ax, ay, az;
-int16_t gx, gy, gz;
-int32_t gcx, gcy, gcz;
-float angleY, accVector;
-
-// PID Variables
-float pidErrorTemp, pidIMen, pidOutput, pidLastDError;
-uint16_t pidConverted;
 
 // PID values
 float pidPGain = 12;
 float pidIGain = 0.001;
 float pidDGain = 3;
 
-uint32_t loopTimer;		// Store the exact value of microseconds every loop needs to have
-
-bool bOverTimeAlertLed = false;		// Semaphore in case the loop is taking longer to finish
-char motorToggle = 0;		// variable used to toggle the motors from left to right
-
-MPU6050 accelgyro;
-
-void MotorInit(void);
-void LeftMotorDir(char);
-void RightMotorDir(char);
-
-void setup(void) {
+void setup(void)
+{
 	pinMode(LED, OUTPUT);
 
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
@@ -66,33 +19,38 @@ void setup(void) {
 #endif
 	Serial.begin(115200);
 
-	accelgyro.initialize();		// MPU6050 Init
+	(void) HC05_Init();		// initialize bluetooth HC05
+	(void) MotorInit();		// initialize motors
+
+	////////////////////////////////////////////////////////////////////////////
+	//  MPU6050 settings section
+	accelgyro.initialize();		// MPU6050 initialize
 
 	accelgyro.setDLPFMode(3);		// 44Hz Low pass filter
-	accelgyro.setFullScaleGyroRange(1);		// Set gyro to -/+ 500 degree/second
+	accelgyro.setFullScaleGyroRange(1);		// Set gyroscope to -/+ 500 degree/second
 
 	// Setting MPU6050 offsets to 0
 	accelgyro.setXGyroOffset(0);
 	accelgyro.setYGyroOffset(0);
 	accelgyro.setZGyroOffset(0);
 
-	(void) MotorInit();		// Init motors
+	////////////////////////////////////////////////////////////////////////////
 
 	loopTimer = micros() + 4000;
 
-	for (int i = 0; i < 2000; i++) {
+	// Get gyroscope calibration value
+	for (int i = 0; i < 2000; i++)
+	{
 		if (i % 15 == 0)
 			digitalWrite(LED, !digitalRead(LED));
-
 		gcy += accelgyro.getRotationY();
-
 		while (loopTimer > micros())
 			;
 		loopTimer += 4000;
 	}
 	gcy /= 2000;
 
-	// Get acc start values
+	// Get accelerometer start values
 	accelgyro.getAcceleration(&ax, &ay, &az);
 
 	// Calculate initial angle
@@ -100,13 +58,18 @@ void setup(void) {
 			((uint32_t) ax * ax) + ((uint32_t) ay * ay) + ((uint32_t) az * az));
 	angleY = (-1) * asin(ax / accVector) * RAD_TO_DEG;
 
-	digitalWrite(LED, LOW);
+	digitalWrite(LED, OFF);
 	loopTimer = micros() + 4000;
 }
 
-void loop(void) {
-	gy = accelgyro.getRotationY() - gcy;		// Get gyro Y data and subtract calibration value
+void loop(void)
+{
+	gy = accelgyro.getRotationY() - gcy;// Get gyroscope Y data and subtract calibration value
 	angleY += ((float) gy / 65.5) / 250;		// Convert in degree
+
+	// Read data from phone
+	(void) ReadPhoneOutput(&xOutput, &yOutput, &buttonCommand);
+
 
 	////////////////////////////////////////////////////////////////////////////
 	//  PID section
@@ -130,7 +93,7 @@ void loop(void) {
 	pidLastDError = pidErrorTemp;		// Store the error for the next loop
 
 	if (angleY < 3 && angleY > -3)		// Create a dead-band to stop the motors when the robot is balanced
-			{
+	{
 		pidConverted = 0;
 		pidOutput = 0;
 		pidIMen = 0;		// Need more tests if this needs to be reseted or not in Dead-band
@@ -138,7 +101,8 @@ void loop(void) {
 		analogWrite(RIGHT, 0);
 	}
 
-	if (angleY > 25 || angleY < -25) {
+	if (angleY > 25 || angleY < -25)
+	{
 		pidOutput = 0;
 		pidConverted = 0;
 		pidIMen = 0;
@@ -146,22 +110,29 @@ void loop(void) {
 		analogWrite(RIGHT, 0);
 	}
 
-	if (pidOutput < 0) {
-		(void) LeftMotorDir(BW);
-		(void) RightMotorDir(BW);
+	if (pidOutput < 0)
+	{
+		(void) LeftMotorDir(bw);
+		(void) RightMotorDir(bw);
 		pidOutput *= -1;
-	} else {
-		(void) LeftMotorDir(FW);
-		(void) RightMotorDir(FW);
+	}
+	else
+	{
+		(void) LeftMotorDir(fw);
+		(void) RightMotorDir(fw);
 	}
 
-	if (pidOutput != 0) {
+	if (pidOutput != 0)
+	{
 		pidConverted = map((uint16_t) (pidOutput), 1, 300, 65, 255);
 #if DEBUG_NO_MOTOR_SPIN != 1		
-		if (motorToggle) {
+		if (motorToggle)
+		{
 			analogWrite(LEFT, pidConverted);
 			analogWrite(RIGHT, pidConverted);
-		} else {
+		}
+		else
+		{
 			analogWrite(RIGHT, pidConverted);
 			analogWrite(LEFT, pidConverted);
 		}
@@ -169,16 +140,16 @@ void loop(void) {
 #endif
 	}
 
-/*	Serial.print("An: ");
-	Serial.print(angleY);
-	Serial.print("\tPID_Res: ");
-	Serial.print(pidOutput);
-	Serial.print("\tPID: ");
-	Serial.println(pidConverted);*/
+	/*	Serial.print("An: ");
+	 Serial.print(angleY);
+	 Serial.print("\tPID_Res: ");
+	 Serial.print(pidOutput);
+	 Serial.print("\tPID: ");
+	 Serial.println(pidConverted);*/
 
 	// Visual led alert in case 250Hz loop is lager
 	if (bOverTimeAlertLed)
-		digitalWrite(LED, HIGH);
+		digitalWrite(LED, ON);
 	bOverTimeAlertLed = 1;
 
 	while (loopTimer > micros())
@@ -186,35 +157,13 @@ void loop(void) {
 	loopTimer += 4000;
 }
 
-void MotorInit(void) {
-	pinMode(LEFT, OUTPUT);
-	pinMode(RIGHT, OUTPUT);
-
-	pinMode(L_FW, OUTPUT);
-	pinMode(L_BW, OUTPUT);
-	pinMode(R_FW, OUTPUT);
-	pinMode(R_BW, OUTPUT);
-	// Set initial rotation direction
-	(void) LeftMotorDir(FW);
-	(void) RightMotorDir(FW);
-}
-
-void LeftMotorDir(char dir) {
-	if (dir == BW) {
-		digitalWrite(L_BW, HIGH);
-		digitalWrite(L_FW, LOW);
-	} else if (dir == FW) {
-		digitalWrite(L_FW, HIGH);
-		digitalWrite(L_BW, LOW);
+void ProcessButton(void)
+{
+	if(buttonCommand != NULL)
+	{
+		//Process button
 	}
-}
 
-void RightMotorDir(char dir) {
-	if (dir == BW) {
-		digitalWrite(R_BW, HIGH);
-		digitalWrite(R_FW, LOW);
-	} else if (dir == FW) {
-		digitalWrite(R_FW, HIGH);
-		digitalWrite(R_BW, LOW);
-	}
+	// Reset button
+	buttonCommand = NULL;
 }
