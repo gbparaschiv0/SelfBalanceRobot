@@ -4,6 +4,8 @@
 
 #define RX 2
 #define TX 3
+#define START_OF_STRING 2
+#define END_OF_STRING 3
 
 #define NR_TO_CH(x) (x + 48)		// Convert number to ASCII
 #define CH_TO_NR(x) (x - 48)		// Convert ASCII to number
@@ -17,43 +19,44 @@ void HC05_Init(void)
 
 void ReadPhoneOutput(short * outputX, short * outputY, char * outCommand)
 {
-	static bool bStart;
-	char value;
-	static char buffLen;
-	static unsigned short dataXY[2];		// x = 0, y = 1
+	static bool bStartRec;		// Semaphore for recording data
+	char valueRecive;
+	static char dataRecivedLen;
+	static unsigned short dataRecived[2];		// Buffer for data received from phone
 
 	if (HC05.available())
 	{
-
-		value = (char) HC05.read();
-		if (value == 2)
+		valueRecive = (char) HC05.read();		// Get value from phone
+		if (valueRecive == START_OF_STRING)
 		{
-			bStart = true;
-			buffLen = 0;
-			memset(dataXY, 0x00, sizeof(dataXY));
+			// Reset all values and start recording
+			bStartRec = true;
+			dataRecivedLen = 0;
+			memset(dataRecived, 0x00, sizeof(dataRecived));		// Reset array
 		}
-		else if (value == 3)
+		else if (valueRecive == END_OF_STRING)
 		{
-			bStart = false;
-			if (buffLen == 6)
+			// Stop recording and process data
+			bStartRec = false;
+			if (dataRecivedLen == 6)		// If coordinates, process it
 			{
-				*outputX = (short) dataXY[0] - 200;
-				*outputY = (short) dataXY[1] - 200;
+				*outputX = (short) dataRecived[0] - 200;
+				*outputY = (short) dataRecived[1] - 200;
 			}
-			else if (buffLen == 1 && NR_TO_CH(dataXY[0]) > 64)
+			else if (dataRecivedLen == 1 && NR_TO_CH(dataRecived[0]) > 64)		// If button
 			{
-				*outCommand = NR_TO_CH(dataXY[0]);
+				*outCommand = NR_TO_CH(dataRecived[0]);
 			}
 		}
-		else if (bStart)
+		else if (bStartRec)		// Record data
 		{
-			if (buffLen < 6)
+			if (dataRecivedLen < 6)		// Don't record more then 6 char
 			{
-				dataXY[buffLen / 3] *= 10;
-				dataXY[buffLen / 3] += CH_TO_NR(value);
+				dataRecived[dataRecivedLen / 3] *= 10;
+				dataRecived[dataRecivedLen / 3] += CH_TO_NR(valueRecive);
 			}
 
-			buffLen++;
+			dataRecivedLen++;
 		}
 	}
 }
