@@ -8,6 +8,7 @@
 #define SELFBALANCEROBOT_H_
 
 #include <Arduino.h>
+#include <EEPROM.h>
 #include "libs/I2Cdev.h"
 #include "libs/MPU6050.h"
 #include "libs/HC05.h"
@@ -20,10 +21,26 @@
 // Led pin define
 #define LED 13
 
+// Used for PID adjustment
+#define P_ADD 65
+#define P_SUB 67
+#define I_ADD 69
+#define I_SUB 71
+#define D_ADD 73
+#define D_SUB 75
+#define I_DEVISION 1000
+
 // User friendly defines
 #define ON 1
 #define OFF 0
 #define NULL 0
+
+typedef struct
+{
+	float p;
+	float i;
+	float d;
+}sPID;
 
 //Output values from phone
 short xOutput, yOutput;
@@ -45,6 +62,9 @@ bool bOverTimeAlertLed = false;	// Semaphore in case the loop is taking longer t
 char motorToggle = 0;	// variable used to toggle the motors from left to right
 
 MPU6050 accelgyro;
+
+// PID structure
+sPID myPID;
 
 void ProcessButton(void);
 #endif /* SELFBALANCEROBOT_H_ */
