@@ -144,3 +144,23 @@ libs/I2Cdev\.h
 libs/MPU6050\.cpp
 
 libs/MPU6050\.h
+
+build/Uno/libraries/SoftwareSerial/src/SoftwareSerial\.cpp\.d
+
+build/Uno/libraries/SoftwareSerial/src/SoftwareSerial\.cpp\.o
+
+build/Uno/project/HC05\.cpp\.d
+
+build/Uno/project/HC05\.cpp\.o
+
+build/Uno/project/HelloWorld\.cpp\.d
+
+build/Uno/project/HelloWorld\.cpp\.o
+
+build/Uno/project/libs/HC05\.cpp\.d
+
+build/Uno/project/libs/HC05\.cpp\.o
+
+build/Uno/project/main\.cpp\.d
+
+build/Uno/project/main\.cpp\.o
