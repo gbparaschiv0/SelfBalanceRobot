@@ -17,7 +17,8 @@ void HC05_Init(void)
 	HC05.begin(57600);
 }
 
-void ReadPhoneOutput(short * outputX, short * outputY, char * outCommand)
+void ReadPhoneOutput(short * outputX, short * outputY,
+		unsigned char * outCommand)
 {
 	static bool bStartRec = false;		// Semaphore for recording data
 	static bool bWrongValue = false;

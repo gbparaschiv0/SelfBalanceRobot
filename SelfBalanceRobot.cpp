@@ -1,11 +1,8 @@
 #include "SelfBalanceRobot.h"
 
 // Debugging defines
-#define DEBUG_NO_MOTOR_SPIN 1
+#define DEBUG_NO_MOTOR_SPIN 0
 #define PID_CALIBRATION 0
-
-#define ANGLE_FOR_MOVING 5
-
 
 void setup(void)
 {
@@ -18,10 +15,12 @@ void setup(void)
 #endif
 	Serial.begin(115200);
 
-/*	myPID = {10, 0, 0};
-	EEPROM.put(0, myPID);*/
-
+#if PID_CALIBRATION == 1
+	myPID = {10, 0, 0};
+	EEPROM.put(0, myPID);
+#else
 	EEPROM.get(0, myPID);
+#endif
 
 	(void) HC05_Init();		// initialize Bluetooth HC05
 	(void) MotorInit();		// initialize motors
@@ -87,19 +86,8 @@ void loop(void)
 
 	////////////////////////////////////////////////////////////////////////////
 	//  PID section
-/*	if(yOutput > 30)
-	{
-		pidErrorTemp = (int16_t) (angleY) + ANGLE_FOR_MOVING;
-	}
-	else if(yOutput < -30)
-	{
-		pidErrorTemp = (int16_t) (angleY) - ANGLE_FOR_MOVING;
-	}
-	else
-	{
-		pidErrorTemp = (int16_t) (angleY);
-	}*/
 
+	pidErrorTemp = angleY - pidSetpoint + selfBalancePidSetpoint;
 
 	pidIMen += myPID.i * pidErrorTemp;
 	if (pidIMen > 150)
@@ -117,13 +105,10 @@ void loop(void)
 
 	pidLastDError = pidErrorTemp;		// Store the error for the next loop
 
-	if (angleY < 3 && angleY > -3)		// Create a dead-band to stop the motors when the robot is balanced
+	if (pidOutput < (3 * myPID.p) && pidOutput > (-3 * myPID.p))		// Create a dead-band to stop the motors when the robot is balanced
 	{
 		pidConverted = 0;
 		pidOutput = 0;
-		pidIMen = 0;		// Need more tests if this needs to be reseted or not in Dead-band
-		analogWrite(LEFT, 0);
-		analogWrite(RIGHT, 0);
 	}
 
 	if (angleY > 25 || angleY < -25)
@@ -133,6 +118,42 @@ void loop(void)
 		pidIMen = 0;
 		analogWrite(LEFT, 0);
 		analogWrite(RIGHT, 0);
+	}
+
+#if PID_CALIBRATION == 0
+	if (yOutput > 30)
+	{
+		if (pidSetpoint > -2.5)
+			pidSetpoint -= 0.05;
+		if (pidOutput > maxTargetSpeed * -1)
+			pidSetpoint -= 0.005;
+
+	}
+	else if (yOutput < -30)
+	{
+		if (pidSetpoint < 2.5)
+			pidSetpoint += 0.05;
+		if (pidOutput < maxTargetSpeed)
+			pidSetpoint += 0.005;
+
+	}
+	else		// Need to test if we should brake instant or slowly
+	{
+		if (pidSetpoint > 0.5)
+			pidSetpoint -= 0.05;
+		else if (pidSetpoint < -0.5)
+			pidSetpoint += 0.05;
+		else
+			pidSetpoint = 0;
+	}
+#endif
+
+	if (pidSetpoint == 0)
+	{
+		if (pidOutput < 0)
+			selfBalancePidSetpoint += 0.0015;
+		if (pidOutput > 0)
+			selfBalancePidSetpoint -= 0.0015;
 	}
 
 	if (pidOutput < 0)
@@ -163,6 +184,11 @@ void loop(void)
 		}
 		motorToggle ^= 0x01;
 #endif
+	}
+	else
+	{
+		analogWrite(LEFT, 0);
+		analogWrite(RIGHT, 0);
 	}
 
 /*		Serial.print("An: ");
