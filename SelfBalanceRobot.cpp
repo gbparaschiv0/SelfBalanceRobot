@@ -146,7 +146,6 @@ void loop(void)
 		else
 			pidSetpoint = 0;
 	}
-#endif
 
 	if (pidSetpoint == 0)
 	{
@@ -155,6 +154,7 @@ void loop(void)
 		if (pidOutput > 0)
 			selfBalancePidSetpoint -= 0.0015;
 	}
+#endif
 
 	if (pidOutput < 0)
 	{
