@@ -44,7 +44,7 @@ typedef struct
 
 //Output values from phone
 short xOutput, yOutput;
-char buttonCommand;
+unsigned char buttonCommand;
 
 // MPU6050 Variables
 int16_t ax, ay, az;

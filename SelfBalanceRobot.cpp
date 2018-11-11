@@ -1,12 +1,11 @@
 #include "SelfBalanceRobot.h"
 
 // Debugging defines
-#define DEBUG_NO_MOTOR_SPIN 0
+#define DEBUG_NO_MOTOR_SPIN 1
 #define PID_CALIBRATION 0
 
 #define ANGLE_FOR_MOVING 5
 
-int shiftSetPoint = 0;
 
 void setup(void)
 {
@@ -24,7 +23,7 @@ void setup(void)
 
 	EEPROM.get(0, myPID);
 
-	(void) HC05_Init();		// initialize bluetooth HC05
+	(void) HC05_Init();		// initialize Bluetooth HC05
 	(void) MotorInit();		// initialize motors
 
 	////////////////////////////////////////////////////////////////////////////
@@ -88,21 +87,18 @@ void loop(void)
 
 	////////////////////////////////////////////////////////////////////////////
 	//  PID section
-	if(yOutput > 30)
+/*	if(yOutput > 30)
 	{
 		pidErrorTemp = (int16_t) (angleY) + ANGLE_FOR_MOVING;
-		shiftSetPoint = ANGLE_FOR_MOVING;
 	}
 	else if(yOutput < -30)
 	{
 		pidErrorTemp = (int16_t) (angleY) - ANGLE_FOR_MOVING;
-		shiftSetPoint = -ANGLE_FOR_MOVING;
 	}
 	else
 	{
 		pidErrorTemp = (int16_t) (angleY);
-		shiftSetPoint = 0;
-	}
+	}*/
 
 
 	pidIMen += myPID.i * pidErrorTemp;
@@ -121,7 +117,7 @@ void loop(void)
 
 	pidLastDError = pidErrorTemp;		// Store the error for the next loop
 
-	if (angleY < (3 + shiftSetPoint) && angleY > (-3 + shiftSetPoint))		// Create a dead-band to stop the motors when the robot is balanced
+	if (angleY < 3 && angleY > -3)		// Create a dead-band to stop the motors when the robot is balanced
 	{
 		pidConverted = 0;
 		pidOutput = 0;
