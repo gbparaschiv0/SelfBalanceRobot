@@ -44,7 +44,7 @@ typedef struct
 
 //Output values from phone
 short xOutput, yOutput;
-char buttonCommand;
+unsigned char buttonCommand;
 
 // MPU6050 Variables
 int16_t ax, ay, az;
@@ -53,8 +53,10 @@ int32_t gcx, gcy, gcz;
 float angleY, accVector;
 
 // PID Variables
-float pidErrorTemp, pidIMen, pidOutput, pidLastDError;
+float pidErrorTemp, pidIMen, pidOutput, pidLastDError, pidSetpoint,
+		selfBalancePidSetpoint;
 uint16_t pidConverted;
+unsigned char maxTargetSpeed = 150;
 
 uint32_t loopTimer;	// Store the exact value of microseconds every loop needs to have
 

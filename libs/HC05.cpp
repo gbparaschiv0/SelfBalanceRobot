@@ -17,20 +17,23 @@ void HC05_Init(void)
 	HC05.begin(57600);
 }
 
-void ReadPhoneOutput(short * outputX, short * outputY, char * outCommand)
+void ReadPhoneOutput(short * outputX, short * outputY,
+		unsigned char * outCommand)
 {
-	static bool bStartRec;		// Semaphore for recording data
-	char valueRecive;
-	static char dataRecivedLen;
-	static unsigned short dataRecived[2];		// Buffer for data received from phone
+	static bool bStartRec = false;		// Semaphore for recording data
+	static bool bWrongValue = false;
+	unsigned char valueRecive = 0;
+	static unsigned char dataRecivedLen;
+	static unsigned short dataRecived[2];// Buffer for data received from phone
 
 	if (HC05.available())
 	{
-		valueRecive = (char) HC05.read();		// Get value from phone
+		valueRecive = (unsigned char) HC05.read();		// Get value from phone
 		if (valueRecive == START_OF_STRING)
 		{
 			// Reset all values and start recording
 			bStartRec = true;
+			bWrongValue = false;
 			dataRecivedLen = 0;
 			memset(dataRecived, 0x00, sizeof(dataRecived));		// Reset array
 		}
@@ -38,24 +41,36 @@ void ReadPhoneOutput(short * outputX, short * outputY, char * outCommand)
 		{
 			// Stop recording and process data
 			bStartRec = false;
-			if (dataRecivedLen == 6)		// If coordinates, process it
+			if (!bWrongValue)
 			{
-				*outputX = (short) dataRecived[0] - 200;
-				*outputY = (short) dataRecived[1] - 200;
-			}
-			else if (dataRecivedLen == 1 && NR_TO_CH(dataRecived[0]) > 64)		// If button
-			{
-				*outCommand = NR_TO_CH(dataRecived[0]);
+				if (dataRecivedLen == 6)		// If coordinates, process it
+				{
+					short tempX, tempY;
+					tempX = (short) dataRecived[0] - 200;
+					tempY = (short) dataRecived[1] - 200;
+					if (tempX <= 100 && tempX >= -100 && tempY <= 100
+							&& tempY >= -100)		// Second verification
+					{
+						*outputX = tempX;
+						*outputY = tempY;
+					}
+				}
+				else if (dataRecivedLen == 1 && NR_TO_CH(dataRecived[0]) > 64)// If button
+				{
+					*outCommand = NR_TO_CH(dataRecived[0]);
+				}
 			}
 		}
 		else if (bStartRec)		// Record data
 		{
 			if (dataRecivedLen < 6)		// Don't record more then 6 char
 			{
-				dataRecived[dataRecivedLen / 3] *= 10;
-				dataRecived[dataRecivedLen / 3] += CH_TO_NR(valueRecive);
+				unsigned char axeCalc = dataRecivedLen / 3;
+				dataRecived[axeCalc] *= 10;
+				dataRecived[axeCalc] += CH_TO_NR(valueRecive);
+				if (valueRecive > 80)		// First verification
+					bWrongValue = true;
 			}
-
 			dataRecivedLen++;
 		}
 	}
