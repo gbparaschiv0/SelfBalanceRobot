@@ -2,11 +2,3 @@
 \.project
 /\.settings/
 /build/
-
-libs/I2Cdev\.cpp
-
-libs/I2Cdev\.h
-
-libs/MPU6050\.cpp
-
-libs/MPU6050\.h
